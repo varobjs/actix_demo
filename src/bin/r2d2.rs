@@ -58,8 +58,12 @@ mod tests {
         let pool = r2d2_mysql_connection_pool();
         let conn = pool.get().unwrap();
 
-        let row = insert_user(&conn, "deli".to_string());
-        assert_eq!(row, 1);
+        conn.transaction::<(), _, _>(|| {
+            let row = insert_user(&conn, "deli".to_string());
+            assert_eq!(row, 1);
+
+            Err(Error::RollbackTransaction)
+        }).ok();
     }
 
     #[test]
@@ -67,8 +71,12 @@ mod tests {
         let pool = r2d2_mysql_connection_pool();
         let conn = pool.get().unwrap();
 
-        let new_id = insert_user_get_id(&conn, "deli".to_string());
-        assert!(new_id > 0);
+        conn.transaction::<(), _, _>(|| {
+            let new_id = insert_user_get_id(&conn, "deli".to_string());
+            assert!(new_id > 0);
+
+            Err(Error::RollbackTransaction)
+        }).ok();
     }
 
     #[bench]
