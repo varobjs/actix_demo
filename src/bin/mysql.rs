@@ -84,7 +84,7 @@ mod tests {
 
         conn.transaction::<(), _, _>(|| {
             let new_id = insert_user_get_id(&conn, "deli".to_string());
-            assert!(new_id > 1);
+            assert!(new_id > 0);
 
             Err(Error::RollbackTransaction)
         }).ok();
