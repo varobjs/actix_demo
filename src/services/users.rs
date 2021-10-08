@@ -144,16 +144,17 @@ pub fn batch_insert_user(conn: &MysqlConnection, names: Vec<String>) -> usize {
 ///
 /// conn.transaction::<(), _, _>(|| {
 ///     let new_id = users::insert_user_get_id(&conn, "deli".to_string());
-///     let user = users::user_detail(&conn, new_id);
+///     let user = users::user_detail(&conn, new_id).unwrap();
 ///     println!("{:?}", user);
 ///     assert_eq!(User { id: new_id, name: "deli".to_string(), is_deleted: 0 }, user);
 ///
 ///    Err(Error::RollbackTransaction)
 /// }).ok();
 /// ```
-pub fn user_detail(conn: &MysqlConnection, user_id: i32) -> User {
+pub fn user_detail(
+    conn: &MysqlConnection,
+    user_id: i32) -> Result<User, Error> {
     users
         .filter(id.eq(user_id))
-        .first(conn)
-        .unwrap()
+        .first::<User>(conn)
 }

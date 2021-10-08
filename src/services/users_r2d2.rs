@@ -107,7 +107,7 @@ pub fn insert_user_get_id(
 ///
 /// conn.transaction::<(), _, _>(|| {
 ///     let new_id = users_r2d2::insert_user_get_id(&conn, "deli".to_string());
-///     let user = users_r2d2::user_detail(&conn, new_id);
+///     let user = users_r2d2::user_detail(&conn, new_id).unwrap();
 ///     println!("{:?}", user);
 ///     assert_eq!(User { id: new_id, name: "deli".to_string(), is_deleted: 0 }, user);
 ///
@@ -117,9 +117,8 @@ pub fn insert_user_get_id(
 pub fn user_detail(
     conn: &PooledConnection<ConnectionManager<MysqlConnection>>,
     user_id: i32,
-) -> User {
+) -> Result<User, Error> {
     users
         .filter(id.eq(user_id))
-        .first(conn)
-        .unwrap()
+        .first::<User>(conn)
 }
