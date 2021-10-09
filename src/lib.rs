@@ -21,3 +21,8 @@ pub fn r2d2_mysql_connection_pool(url: String) -> Pool<ConnectionManager<MysqlCo
         .build(manager)
         .unwrap()
 }
+
+pub fn get_v3_uuid() -> String {
+    let uuid = uuid::Uuid::new_v4();
+    uuid.to_string().replace("-", "")
+}
