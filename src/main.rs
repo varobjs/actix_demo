@@ -46,7 +46,7 @@ async fn user2(data: web::Data<AppState>) -> impl Responder {
 }
 
 async fn trace_save(traces: web::Json<TraceSqlPackage>,data: web::Data<AppState>) -> String {
-    format!("trace {:?}", traces)
+    "hello".to_string()
 }
 
 
@@ -58,7 +58,7 @@ struct AppState {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     dotenv::dotenv().ok();
-    std::env::set_var("RUST_LOG", "actix_web=info");
+    std::env::set_var("RUST_LOG", "actix_web=debug");
     env_logger::init();
 
     let url = std::env::var("DATABASE_URL").unwrap();
@@ -69,7 +69,7 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .middleware(Logger::default())
+            .wrap(Logger::default())
             .app_data(app_data.clone())
             .service(index)
             .service(user1)
