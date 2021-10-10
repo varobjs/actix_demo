@@ -15,8 +15,9 @@ use hello_actix::models::trace_sql_files::NewTraceSqlFiles;
 #[derive(Deserialize, Serialize, Debug)]
 struct TraceSqlPackage {
     pub app_uuid: Option<String>,
-    pub trace_sqls: NewTraceSqlFiles,
-    pub trace_files: NewTraceSqlFiles,
+    pub test: String,
+    // pub trace_sqls: NewTraceSqlFiles,
+    // pub trace_files: NewTraceSqlFiles,
 }
 
 #[get("/")]
@@ -45,7 +46,7 @@ async fn user2(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-async fn trace_save(traces: web::Json<TraceSqlPackage>,data: web::Data<AppState>) -> String {
+async fn save_trace(_traces: web::Json<TraceSqlPackage>, _data: web::Data<AppState>) -> String {
     "hello".to_string()
 }
 
@@ -78,7 +79,7 @@ async fn main() -> std::io::Result<()> {
                 web::resource("/trace")
                     .name("trace_sql")
                     .guard(actix_web::guard::Header("content-type", "application/json"))
-                    .route(web::post().to(trace_save))
+                    .route(web::post().to(save_trace))
             )
     })
         .bind("0.0.0.0:7789")?
