@@ -1,24 +1,20 @@
 extern crate env_logger;
 
-use hello_actix::{r2d2_mysql_connection_pool, mysql_connection};
-use hello_actix::services::{users_r2d2, users};
-
-use actix_web::{get, post, Responder, HttpResponse, HttpServer, App, web};
-use diesel::MysqlConnection;
-use diesel::r2d2::{Pool, ConnectionManager};
 use std::sync::Mutex;
-use actix_web::middleware::Logger;
-use serde::{Serialize, Deserialize};
-use hello_actix::models::trace_sqls::NewTraceSqls;
-use hello_actix::models::trace_sql_files::NewTraceSqlFiles;
 
-#[derive(Deserialize, Serialize, Debug)]
-struct TraceSqlPackage {
-    pub app_uuid: Option<String>,
-    pub test: String,
-    // pub trace_sqls: NewTraceSqlFiles,
-    // pub trace_files: NewTraceSqlFiles,
-}
+use actix_web::{App, get, HttpResponse, HttpServer, Responder, web};
+use actix_web::body::ResponseBody;
+use actix_web::dev::{ServiceResponse};
+use actix_web::error::Result;
+use actix_web::middleware::errhandlers::{ErrorHandlerResponse, ErrorHandlers};
+use actix_web::middleware::Logger;
+use diesel::MysqlConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
+
+use hello_actix::{mysql_connection, r2d2_mysql_connection_pool};
+use hello_actix::services::{users, users_r2d2};
+use hello_actix::services::trace::batch_save_traces;
+use hello_actix::services::trace::RequestNewTraceSql;
 
 #[get("/")]
 async fn index() -> impl Responder {
@@ -46,8 +42,17 @@ async fn user2(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-async fn save_trace(_traces: web::Json<TraceSqlPackage>, _data: web::Data<AppState>) -> String {
-    "hello".to_string()
+async fn save_trace(traces: web::Json<Vec<RequestNewTraceSql>>, data: web::Data<AppState>) -> impl Responder {
+    let pool = &data.r2d2;
+    let conn = pool.get().unwrap();
+    let res = match serde_json::to_string(&*traces) {
+        Ok(t) => { batch_save_traces(&conn, &t).unwrap() }
+        Err(_e) => panic!("error")
+    };
+
+    HttpResponse::Ok()
+        .content_type("application/json")
+        .json(res)
 }
 
 
@@ -55,6 +60,36 @@ struct AppState {
     r2d2: Pool<ConnectionManager<MysqlConnection>>,
     mysql: Mutex<MysqlConnection>,
 }
+
+fn more_handler<B>(mut res: ServiceResponse<B>) -> Result<ErrorHandlerResponse<B>> {
+    let status = res.status();
+    res = res.map_body::<_, B>(|_, _| {
+        ResponseBody::Other(
+            format!(
+                r#"{{"code":{},"message":"{}"}}"#,
+                status.as_u16(),
+                status.canonical_reason().unwrap_or("")
+            )
+                .into(),
+        )
+    });
+    res.response_mut()
+        .headers_mut()
+        .insert(actix_web::http::header::CONTENT_TYPE, actix_web::http::HeaderValue::from_static("application/json"));
+    Ok(ErrorHandlerResponse::Response(res))
+}
+
+fn route_config(cfg: &mut web::ServiceConfig) {
+    cfg
+        .service(index)
+        .service(user1)
+        .service(user2)
+        .service(web::resource("/trace")
+            .guard(actix_web::guard::Header("content-type", "application/json"))
+            .route(web::post().to(save_trace))
+        );
+}
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -70,17 +105,18 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            .wrap(Logger::default())
             .app_data(app_data.clone())
-            .service(index)
-            .service(user1)
-            .service(user2)
-            .service(
-                web::resource("/trace")
-                    .name("trace_sql")
-                    .guard(actix_web::guard::Header("content-type", "application/json"))
-                    .route(web::post().to(save_trace))
+            .app_data(
+                web::JsonConfig::default().limit(4096)
             )
+            .wrap(
+                ErrorHandlers::new()
+                    .handler(actix_web::http::StatusCode::NOT_FOUND, more_handler)
+                    .handler(actix_web::http::StatusCode::INTERNAL_SERVER_ERROR, more_handler)
+                    .handler(actix_web::http::StatusCode::SERVICE_UNAVAILABLE, more_handler)
+            )
+            .wrap(Logger::default())
+            .configure(route_config)
     })
         .bind("0.0.0.0:7789")?
         .run()

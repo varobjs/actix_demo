@@ -1,8 +1,11 @@
 use std::io::Error;
+
 use chrono::NaiveDateTime;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde_json::value::Value::Null;
 use validator::Validate;
-use serde::{Serialize, Deserialize};
+
 use crate::schema::trace_sql_files;
 
 #[derive(Queryable)]
@@ -44,13 +47,13 @@ impl NewTraceSqlFiles {
     ) -> Result<Self, Error> {
         if let Some(t) = app_uuid {
             value["app_uuid"] = Value::String(t.to_string());
-        } else if value.get("app_uuid") == None {
+        } else if value.get("app_uuid") == None || value.get("app_uuid") == Some(&Null) {
             value["app_uuid"] = Value::String(crate::get_v3_uuid());
         }
 
         if let Some(t) = sql_uuid {
             value["sql_uuid"] = Value::String(t.to_string());
-        } else if value.get("app_uuid") == None {
+        } else if value.get("sql_uuid") == None || value.get("sql_uuid") == Some(&Null) {
             value["sql_uuid"] = Value::String(crate::get_v3_uuid());
         }
 

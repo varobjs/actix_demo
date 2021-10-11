@@ -1,9 +1,12 @@
 use std::io::Error;
+
 use chrono::NaiveDateTime;
-use crate::schema::trace_sqls;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde_json::value::Value::Null;
 use validator::Validate;
+
+use crate::schema::trace_sqls;
 
 #[derive(Queryable)]
 pub struct TraceSqls {
@@ -23,7 +26,7 @@ pub struct TraceSqls {
 }
 
 
-#[derive(Insertable, Validate, Debug, Deserialize, Clone)]
+#[derive(Insertable, Validate, Debug, Serialize, Deserialize, Clone)]
 #[table_name = "trace_sqls"]
 pub struct NewTraceSqls {
     #[validate(length(equal = 32))]
@@ -61,6 +64,23 @@ pub struct NewTraceSqls {
     pub created_at: NaiveDateTime,
 }
 
+#[derive(Queryable, Insertable, Default, Debug)]
+#[table_name = "trace_sqls"]
+pub struct NewTraceSqlsV1 {
+    pub app_uuid: String,
+    pub sql_uuid: String,
+    pub db_host: String,
+    pub run_host: String,
+    pub run_ms: u32,
+    pub run_mode: String,
+    pub request_uri: String,
+    pub referer: String,
+    pub trace_sql_md5: String,
+    pub trace_sql: String,
+    pub trace_sql_binds: String,
+    pub created_at: Option<NaiveDateTime>,
+}
+
 impl NewTraceSqls {
     pub fn from_json(
         value: &mut Value,
@@ -68,15 +88,25 @@ impl NewTraceSqls {
     ) -> Result<Self, Error> {
         if let Some(t) = app_uuid {
             value["app_uuid"] = Value::String(t.to_string());
-        } else if value.get("app_uuid") == None {
+        } else if value.get("app_uuid") == None || value.get("app_uuid") == Some(&Null) {
             value["app_uuid"] = Value::String(crate::get_v3_uuid());
         }
 
-        if value.get("sql_uuid") == None {
+        if value.get("sql_uuid") == None || value.get("sql_uuid") == Some(&Null) {
             value["sql_uuid"] = Value::String(crate::get_v3_uuid());
         }
 
         let trace: Self = serde_json::from_str(&value.to_string())?;
         Ok(trace)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::models::trace_sqls::NewTraceSqlsV1;
+
+    #[test]
+    fn test1() {
+        println!("{:?}", NewTraceSqlsV1::default())
     }
 }

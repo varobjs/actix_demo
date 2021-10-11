@@ -1,15 +1,45 @@
 use std::collections::HashMap;
 use std::io::Error;
 use std::prelude::rust_2021::FromIterator;
+
 use diesel::{Connection, MysqlConnection, RunQueryDsl};
 use diesel::r2d2::{ConnectionManager, PooledConnection};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::models::trace_sqls::NewTraceSqls;
-use crate::models::trace_sql_files::NewTraceSqlFiles;
-use crate::schema::trace_sqls::dsl::trace_sqls as STraceSqls;
-use crate::schema::trace_sql_files::dsl::trace_sql_files as STraceSqlFiles;
 
-fn batch_save_traces(
+use crate::models::trace_sql_files::NewTraceSqlFiles;
+use crate::models::trace_sqls::NewTraceSqls;
+use crate::schema::trace_sql_files::dsl::trace_sql_files as STraceSqlFiles;
+use crate::schema::trace_sqls::dsl::trace_sqls as STraceSqls;
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct RequestNewTraceSqlFile {
+    pub app_uuid: Option<String>,
+    pub sql_uuid: Option<String>,
+    pub trace_file: String,
+    pub trace_line: u32,
+    pub trace_class: String,
+    pub created_at: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct RequestNewTraceSql {
+    pub app_uuid: Option<String>,
+    pub sql_uuid: Option<String>,
+    pub db_host: String,
+    pub run_host: String,
+    pub run_ms: u32,
+    pub run_mode: String,
+    pub request_uri: String,
+    pub referer: String,
+    pub trace_sql_md5: String,
+    pub trace_sql: String,
+    pub trace_sql_binds: String,
+    pub created_at: String,
+    pub trace_files: Vec<RequestNewTraceSqlFile>,
+}
+
+pub fn batch_save_traces(
     conn: &PooledConnection<ConnectionManager<MysqlConnection>>,
     data: &str,
 ) -> Result<HashMap<String, Vec<String>>, Error> {
@@ -39,8 +69,6 @@ fn batch_save_traces(
 
         trace_sqls.push(trace_sql.clone());
     }
-    // println!("trace_sqls: {:#?}", trace_sqls);
-    // println!("trace_sql_files: {:#?}", trace_sql_files);
 
     conn.transaction::<(), diesel::result::Error, _>(|| {
         diesel::insert_into(STraceSqls)
