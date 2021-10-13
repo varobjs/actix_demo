@@ -4,6 +4,11 @@ extern crate diesel;
 pub mod services;
 pub mod models;
 pub mod schema;
+pub mod route;
+
+pub struct AppState {
+    pub r2d2: Pool<ConnectionManager<MysqlConnection>>,
+}
 
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
