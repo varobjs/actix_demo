@@ -64,23 +64,6 @@ pub struct NewTraceSqls {
     pub created_at: NaiveDateTime,
 }
 
-#[derive(Queryable, Insertable, Default, Debug)]
-#[table_name = "trace_sqls"]
-pub struct NewTraceSqlsV1 {
-    pub app_uuid: String,
-    pub sql_uuid: String,
-    pub db_host: String,
-    pub run_host: String,
-    pub run_ms: u32,
-    pub run_mode: String,
-    pub request_uri: String,
-    pub referer: String,
-    pub trace_sql_md5: String,
-    pub trace_sql: String,
-    pub trace_sql_binds: String,
-    pub created_at: Option<NaiveDateTime>,
-}
-
 impl NewTraceSqls {
     pub fn from_json(
         value: &mut Value,
@@ -89,24 +72,14 @@ impl NewTraceSqls {
         if let Some(t) = app_uuid {
             value["app_uuid"] = Value::String(t.to_string());
         } else if value.get("app_uuid") == None || value.get("app_uuid") == Some(&Null) {
-            value["app_uuid"] = Value::String(crate::get_v3_uuid());
+            value["app_uuid"] = Value::String(crate::gen_uuid());
         }
 
         if value.get("sql_uuid") == None || value.get("sql_uuid") == Some(&Null) {
-            value["sql_uuid"] = Value::String(crate::get_v3_uuid());
+            value["sql_uuid"] = Value::String(crate::gen_uuid());
         }
 
         let trace: Self = serde_json::from_str(&value.to_string())?;
         Ok(trace)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::models::trace_sqls::NewTraceSqlsV1;
-
-    #[test]
-    fn test1() {
-        println!("{:?}", NewTraceSqlsV1::default())
     }
 }

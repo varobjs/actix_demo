@@ -48,13 +48,13 @@ impl NewTraceSqlFiles {
         if let Some(t) = app_uuid {
             value["app_uuid"] = Value::String(t.to_string());
         } else if value.get("app_uuid") == None || value.get("app_uuid") == Some(&Null) {
-            value["app_uuid"] = Value::String(crate::get_v3_uuid());
+            value["app_uuid"] = Value::String(crate::gen_uuid());
         }
 
         if let Some(t) = sql_uuid {
             value["sql_uuid"] = Value::String(t.to_string());
         } else if value.get("sql_uuid") == None || value.get("sql_uuid") == Some(&Null) {
-            value["sql_uuid"] = Value::String(crate::get_v3_uuid());
+            value["sql_uuid"] = Value::String(crate::gen_uuid());
         }
 
         let trace: Self = serde_json::from_str(&value.to_string())?;

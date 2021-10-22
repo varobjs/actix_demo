@@ -96,11 +96,11 @@ mod tests {
 
     #[test]
     fn foo() {
-        use crate::r2d2_mysql_connection_pool;
+        use crate::get_db_pool;
 
         dotenv::dotenv().ok();
         let url = std::env::var("DATABASE_URL").unwrap();
-        let pool = r2d2_mysql_connection_pool(url);
+        let pool = get_db_pool(url);
         let conn = pool.get().unwrap();
         let data = r#"
     [{

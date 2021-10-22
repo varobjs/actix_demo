@@ -22,12 +22,12 @@ use crate::models::users::User;
 /// use diesel::Connection;
 /// use diesel::result::Error;
 ///
-/// use hello_actix::r2d2_mysql_connection_pool;
+/// use hello_actix::get_db_pool;
 /// use hello_actix::services::users_r2d2;
 ///
 /// dotenv::dotenv().ok();
 /// let url = std::env::var("DATABASE_URL").unwrap();
-/// let pool = r2d2_mysql_connection_pool(url);
+/// let pool = get_db_pool(url);
 /// let conn = pool.get().unwrap();
 ///
 /// conn.transaction::<(), _, _>(|| {
@@ -56,12 +56,12 @@ pub fn insert_user(
 /// use diesel::Connection;
 /// use diesel::result::Error;
 ///
-/// use hello_actix::r2d2_mysql_connection_pool;
+/// use hello_actix::get_db_pool;
 /// use hello_actix::services::users_r2d2;
 ///
 /// dotenv::dotenv().ok();
 /// let url = std::env::var("DATABASE_URL").unwrap();
-/// let pool = r2d2_mysql_connection_pool(url);
+/// let pool = get_db_pool(url);
 /// let conn = pool.get().unwrap();
 ///
 /// conn.transaction::<(), _, _>(|| {
@@ -96,13 +96,13 @@ pub fn insert_user_get_id(
 /// use diesel::Connection;
 /// use diesel::result::Error;
 ///
-/// use hello_actix::r2d2_mysql_connection_pool;
+/// use hello_actix::get_db_pool;
 /// use hello_actix::services::users_r2d2;
 /// use hello_actix::models::users::User;
 ///
 /// dotenv::dotenv().ok();
 /// let url = std::env::var("DATABASE_URL").unwrap();
-/// let pool = r2d2_mysql_connection_pool(url);
+/// let pool = get_db_pool(url);
 /// let conn = pool.get().unwrap();
 ///
 /// conn.transaction::<(), _, _>(|| {

@@ -1,12 +1,7 @@
-use actix_web::{web, get, guard, Responder, HttpResponse};
+use actix_web::{web, get, Responder, HttpResponse, guard};
 use crate::AppState;
-use crate::services::trace::{batch_save_traces, RequestNewTraceSql};
 use crate::services::users_r2d2;
-
-#[get("/")]
-async fn index() -> impl Responder {
-    HttpResponse::Ok().body("Hello world")
-}
+use crate::controllers::trace;
 
 #[get("/user/1")]
 async fn user(data: web::Data<AppState>) -> impl Responder {
@@ -19,29 +14,16 @@ async fn user(data: web::Data<AppState>) -> impl Responder {
     }
 }
 
-async fn save_trace(traces: web::Json<Vec<RequestNewTraceSql>>, data: web::Data<AppState>) -> impl Responder {
-    let pool = &data.r2d2;
-    let conn = pool.get().unwrap();
-    let res = match serde_json::to_string(&*traces) {
-        Ok(t) => { batch_save_traces(&conn, &t).unwrap() }
-        Err(_e) => panic!("error")
-    };
-
-    HttpResponse::Ok()
-        .content_type("application/json")
-        .json(res)
-}
 
 pub fn config(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/v1")
-            // trace
+            // sql trace
             .service(
                 web::resource("/trace")
                     .guard(guard::Header("content-type", "application/json"))
-                    .route(web::post().to(save_trace))
+                    .route(web::post().to(trace::save_trace))
             )
     )
-        .service(index)
         .service(user);
 }
